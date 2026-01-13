@@ -3,3 +3,9 @@
 
 __app_name__ = "duckdb"
 __version__ = "1.0.0"
+
+
+# # Explicitly define the public API for 'from your_package import *'
+__all__ = [
+    "load", "session"
+]

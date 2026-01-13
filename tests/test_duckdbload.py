@@ -109,7 +109,17 @@ class TestDuckDBLoad(unittest.TestCase):
     
     def tearDown(self):
         #we leave the test db alone for now...
-        return super().tearDown()
+        self.test_db_path = os.path.join(repo_path, 'tests', 'data', 'test_persisted_stage.duckdb')
+        conn = duckdb.connect(self.test_db_path)
+        sql = """DROP TABLE IF EXISTS loan__land;"""
+        conn.execute(sql)
+        sql = """DROP TABLE IF EXISTS loan__stage;"""
+        conn.execute(sql)
+        sql = """DROP TABLE IF EXISTS loan;"""
+        conn.execute(sql)
+        sql = """DROP TABLE IF EXISTS loan__hist;"""
+        conn.execute(sql)
+        #return super().tearDown()
     
     def test_one(self):
         #setup logging config as one would when using the library
@@ -120,7 +130,11 @@ class TestDuckDBLoad(unittest.TestCase):
         #create a session.
         session = Session(self.test_db_path, logger)
         #run a persisted staging load
+
         load.exec(session, "test_persisted_stage.main.loan__land", "test_persisted_stage.main.loan", "test_persisted_stage.main.loan__hist", ["update_timestamp", "create_timestamp"])
+
+            
+
         #close the sessions connection.
         session.close()
 
