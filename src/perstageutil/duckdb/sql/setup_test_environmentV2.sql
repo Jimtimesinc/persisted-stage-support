@@ -19,6 +19,7 @@ __pstage_inserted_timestamp TIMESTAMP not null,
 __pstage_updated_timestamp TIMESTAMP null,
 __pstage_deleted_indicator boolean not null,
 __pstage_hash_diff varchar(32),
+__pstage_dedupe_confidence_percent float not null,
 PRIMARY KEY(loan_number));
 
 
@@ -34,6 +35,7 @@ __pstage_inserted_timestamp TIMESTAMP not null,
 __pstage_updated_timestamp TIMESTAMP null,
 __pstage_deleted_indicator boolean not null,
 __pstage_hash_diff varchar(32),
+__pstage_dedupe_confidence_percent float not null,
 PRIMARY KEY(loan_number, __pstage_effective_timestamp));
 
 
@@ -62,7 +64,12 @@ VALUES('1', 100.00, 'john smith', '1992-09-20 11:30:00.123456789'::TIMESTAMP, NU
 --ADD dupe.
 INSERT INTO main.loan__stage
 (loan_number, loan_amount, loan_officer, create_timestamp, update_timestamp)
-VALUES('3', 130.00, 'bob willis', '1992-09-20 11:32:00.123456789'::TIMESTAMP, '1992-09-25 11:30:00.000000000'::TIMESTAMP);
+VALUES('3', 130.00, 'bob willis', '1992-09-20 11:32:00.123456789'::TIMESTAMP, '1992-09-25 11:30:00.000000000'::TIMESTAMP),
+('4', 130.00, 'Joe Strummer', '1992-09-20 11:32:00.123456789'::TIMESTAMP, NULL),
+('4', 140.00, 'Joe Strummer', '1992-09-20 11:32:00.123456789'::TIMESTAMP, NULL),
+('5', 140.00, 'Mick Jones', '1992-09-20 11:40:00.123456789'::TIMESTAMP, NULL),
+('5', 140.00, 'Mick Jones', '1992-09-20 11:40:00.123456789'::TIMESTAMP, NULL),
+('5', 145.00, 'Mick Jones', '1992-09-20 11:40:00.123456789'::TIMESTAMP, NULL);
 
 --test teardown and setup
 TRUNCATE TABLE main.loan__land;

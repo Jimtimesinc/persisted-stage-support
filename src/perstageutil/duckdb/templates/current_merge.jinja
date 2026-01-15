@@ -18,7 +18,8 @@ MERGE INTO {{current_table_catalog}}.{{current_table_schema}}.{{current_table_na
 {% endfor %}
         __pstage_updated_timestamp = CURRENT_LOCALTIMESTAMP(), --S.__pstage_synced_timestamp,
         __pstage_deleted_indicator = false,
-        __pstage_hash_diff = S.__pstage_hash_diff
+        __pstage_hash_diff = S.__pstage_hash_diff,
+        __pstage_dedupe_confidence_percent  = S.__pstage_dedupe_confidence_percent 
     WHEN NOT MATCHED
         THEN INSERT (
 {% for record in land_to_current_key_map_records %}
@@ -29,7 +30,8 @@ MERGE INTO {{current_table_catalog}}.{{current_table_schema}}.{{current_table_na
 {% endfor %}
         __pstage_inserted_timestamp, 
         __pstage_deleted_indicator,
-        __pstage_hash_diff
+        __pstage_hash_diff,
+        __pstage_dedupe_confidence_percent 
         )
         VALUES (
 {% for record in land_to_current_key_map_records %}
@@ -40,6 +42,7 @@ MERGE INTO {{current_table_catalog}}.{{current_table_schema}}.{{current_table_na
 {% endfor %}
         CURRENT_LOCALTIMESTAMP(), --S.__pstage_inserted_timestamp, 
         false, --__pstage_deleted_indicator
-        S.__pstage_hash_diff
+        S.__pstage_hash_diff,
+        S.__pstage_dedupe_confidence_percent 
         );
        

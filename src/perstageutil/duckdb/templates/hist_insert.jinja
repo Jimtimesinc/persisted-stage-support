@@ -23,6 +23,7 @@ CTE_CURRENT AS
 {% endfor %}
         __pstage_deleted_indicator,
         __pstage_hash_diff,
+        __pstage_dedupe_confidence_percent,
 		1 as __pstage_current_version_indicator,
         __pstage_inserted_timestamp AS __pstage_effective_timestamp
     FROM {{current_table_catalog}}.{{current_table_schema}}.{{current_table_name}}
@@ -38,6 +39,7 @@ CTE_CURRENT AS
 {% endfor %}
         __pstage_deleted_indicator,
         __pstage_hash_diff,
+        __pstage_dedupe_confidence_percent,
 		1 as __pstage_current_version_indicator,
         __pstage_updated_timestamp AS __pstage_effective_timestamp
     FROM {{current_table_catalog}}.{{current_table_schema}}.{{current_table_name}}
@@ -53,6 +55,7 @@ SELECT
 {% endfor %}
     __pstage_deleted_indicator,
     __pstage_hash_diff,
+    __pstage_dedupe_confidence_percent,
 	__pstage_current_version_indicator,
 	__pstage_effective_timestamp,
 	'9999-12-31 23:59:59.999999'::TIMESTAMP AS __pstage_expiration_timestamp,

@@ -69,6 +69,8 @@ def check_current_table_structure(session : Session, current_table_object : Data
         raise Exception("Current table is missing the needed __pstage_deleted_indicator column.")
     if ((df["column_name"] == "__pstage_hash_diff").any()) == False:
         raise Exception("Current table is missing the needed __pstage_hash_diff column.")
+    if ((df["column_name"] == "__pstage_dedupe_confidence_percent").any()) == False:
+        raise Exception("Current table is missing the needed __pstage_dedupe_confidence_percent column.")
     if ((df["primary_key_indicator"] == True).any()) == False:
         raise Exception("Current table is missing the needed primary key.")
     
@@ -89,6 +91,8 @@ def check_hist_table_structure(session : Session, hist_table_object : DataObject
         raise Exception("Historical table is missing the needed __pstage_deleted_indicator column.")
     if ((df["column_name"] == "__pstage_hash_diff").any()) == False:
         raise Exception("Historical table is missing the needed __pstage_hash_diff column.")
+    if ((df["column_name"] == "__pstage_dedupe_confidence_percent").any()) == False:
+        raise Exception("Historical table is missing the needed __pstage_dedupe_confidence_percent column.")
     if ((df["primary_key_indicator"] == True).any()) == False:
         raise Exception("Historical table is missing the needed primary key.")
     if (((df["primary_key_indicator"] == True) & (df["column_name"] == "__pstage_effective_timestamp")).any()) == False:

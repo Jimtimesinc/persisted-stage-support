@@ -42,6 +42,7 @@ class TestDuckDBLoad(unittest.TestCase):
         __pstage_updated_timestamp TIMESTAMP null,
         __pstage_deleted_indicator boolean not null,
         __pstage_hash_diff varchar(32),
+        __pstage_dedupe_confidence_percent float not null,
         PRIMARY KEY(loan_number));
         """
         conn.execute(sql)
@@ -59,6 +60,7 @@ class TestDuckDBLoad(unittest.TestCase):
         __pstage_updated_timestamp TIMESTAMP null,
         __pstage_deleted_indicator boolean not null,
         __pstage_hash_diff varchar(32),
+        __pstage_dedupe_confidence_percent float not null,
         PRIMARY KEY(loan_number, __pstage_effective_timestamp));
         """
         conn.execute(sql)
@@ -91,10 +93,15 @@ class TestDuckDBLoad(unittest.TestCase):
         conn.execute(sql)
 
         sql = """
-        --ADD update.
+        --ADD updates and dupes.
         INSERT INTO main.loan__stage
         (loan_number, loan_amount, loan_officer, create_timestamp, update_timestamp)
-        VALUES('3', 130.00, 'bob willis', '1992-09-20 11:32:00.123456789'::TIMESTAMP, '1992-09-25 11:30:00.000000000'::TIMESTAMP);
+        VALUES('3', 130.00, 'bob willis', '1992-09-20 11:32:00.123456789'::TIMESTAMP, '1992-09-25 11:30:00.000000000'::TIMESTAMP),
+        ('4', 130.00, 'Joe Strummer', '1992-09-20 11:32:00.123456789'::TIMESTAMP, NULL),
+        ('4', 140.00, 'Joe Strummer', '1992-09-20 11:32:00.123456789'::TIMESTAMP, NULL),
+        ('5', 140.00, 'Mick Jones', '1992-09-20 11:40:00.123456789'::TIMESTAMP, NULL),
+        ('5', 140.00, 'Mick Jones', '1992-09-20 11:40:00.123456789'::TIMESTAMP, NULL),
+        ('5', 145.00, 'Mick Jones', '1992-09-20 11:40:00.123456789'::TIMESTAMP, NULL);
         """
         conn.execute(sql)
 
@@ -109,6 +116,10 @@ class TestDuckDBLoad(unittest.TestCase):
     
     def tearDown(self):
         #we leave the test db alone for now...
+        #self.myteardown()
+        return super().tearDown()
+
+    def myteardown(self):
         self.test_db_path = os.path.join(repo_path, 'tests', 'data', 'test_persisted_stage.duckdb')
         conn = duckdb.connect(self.test_db_path)
         sql = """DROP TABLE IF EXISTS loan__land;"""
@@ -119,12 +130,13 @@ class TestDuckDBLoad(unittest.TestCase):
         conn.execute(sql)
         sql = """DROP TABLE IF EXISTS loan__hist;"""
         conn.execute(sql)
-        #return super().tearDown()
+        sql = """DROP TABLE IF EXISTS loan__cks;"""
+        conn.execute(sql)
     
     def test_one(self):
         #setup logging config as one would when using the library
         print("Disconnect any other processes from the target duckdb database as connecting to it locks it.")
-        logging.basicConfig(format='%(asctime)s :: %(levelname)s :: %(funcName)s :: %(lineno)d :: %(message)s', level = logging.INFO)
+        logging.basicConfig(format='%(asctime)s :: %(levelname)s :: %(funcName)s :: %(lineno)d :: %(message)s', level = logging.DEBUG)
         logger = logging.getLogger("duckdb_ps_load")
         #test_db_path = os.path.join(repo_path, 'tests', 'data', 'test_persisted_stage.duckdb')
         #create a session.

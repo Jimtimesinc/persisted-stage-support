@@ -2,7 +2,12 @@
 CREATE or replace TEMP TABLE temp.main.temp__cte_{{landing_table_name}}
 AS
 WITH
-CTE_{{landing_table_name}} AS
+CTE_REMOVE_PERFECT_DUPES AS
+(
+	SELECT DISTINCT *
+	FROM {{landing_table_catalog}}.{{landing_table_schema}}.{{landing_table_name}}
+),
+CTE_MAIN AS
 (
     SELECT
 {% for record in land_to_current_key_map_records %}
@@ -14,7 +19,7 @@ CTE_{{landing_table_name}} AS
     __pstage_inserted_timestamp, --this should be there always
 {% if source_change_timestamp_sql %}
     coalesce({{source_change_timestamp_sql}}) AS __pstage_source_change_timestamp,
-{% endif %}    
+{% endif %}
     md5(
 {% for record in land_to_current_attribute_map_records %}
     {% if loop.first %}
@@ -25,6 +30,33 @@ CTE_{{landing_table_name}} AS
 {% endfor %}
     ) AS __pstage_hash_diff,
     ROW_NUMBER() OVER (PARTITION BY {% for record in land_to_current_key_map_records %}{% if loop.first %}{{record.target_column_name}}{% else %}, {{record.target_column_name}}{% endif %}{% endfor %} ORDER BY {% if source_change_timestamp_sql %}__pstage_source_change_timestamp DESC,{% endif %} __pstage_inserted_timestamp DESC) AS __pstage_load_order
-    FROM {{landing_table_catalog}}.{{landing_table_schema}}.{{landing_table_name}}
+    FROM CTE_REMOVE_PERFECT_DUPES
+),
+CTE_CALC_CONFIDENCE AS
+(
+	SELECT
+    {% for record in land_to_current_key_map_records %}
+        {{record.target_column_name}},
+    {% endfor %}
+    {% if source_change_timestamp_sql %}
+         __pstage_source_change_timestamp,
+    {% endif %}
+        __pstage_inserted_timestamp,
+        (1/COUNT(*)) * 100 AS __pstage_dedupe_confidence_percent
+	FROM CTE_MAIN
+	GROUP BY {% for record in land_to_current_key_map_records %}{{record.target_column_name}},{% endfor %}{% if source_change_timestamp_sql %} __pstage_source_change_timestamp,{% endif %} __pstage_inserted_timestamp
 )
-SELECT * FROM CTE_{{landing_table_name}};
+SELECT main.*, ccon.__pstage_dedupe_confidence_percent 
+FROM CTE_MAIN main
+LEFT JOIN CTE_CALC_CONFIDENCE ccon
+{% for record in land_to_current_key_map_records %}
+{% if loop.first %}
+    ON main.{{ record.target_column_name }} = ccon.{{record.target_column_name}}
+{% else %}
+    AND main.{{ record.target_column_name }} = ccon.{{record.target_column_name}}
+{% endif %}
+{% endfor %}
+{% if source_change_timestamp_sql %}
+AND main.__pstage_source_change_timestamp = ccon.__pstage_source_change_timestamp
+{% endif %}
+AND main.__pstage_inserted_timestamp = ccon.__pstage_inserted_timestamp;

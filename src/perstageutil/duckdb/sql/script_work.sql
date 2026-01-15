@@ -5,19 +5,23 @@ truncate table loan__hist;
 
 
 --CREATE TEMP table
-CREATE or replace TEMP TABLE temp__cte_loan__land
-AS
+--CREATE or replace TEMP TABLE temp__cte_loan__land
+--AS
 WITH
-CTE_loan__land AS
+CTE_REMOVE_PERFECT_DUPES AS
+(
+	SELECT DISTINCT *
+	FROM test_persisted_stage.main.loan__land
+),
+CTE_MAIN AS
 (
 	SELECT TRIM(loan_number) AS loan_number, 
 	loan_amount AS loan_amount,
 	TRIM(loan_officer) AS loan_officer,
 	create_timestamp AS create_timestamp, 
 	update_timestamp AS update_timestamp,
-	__pstage_load_dts AS __pstage_load_dts,
+	__pstage_inserted_timestamp,
 	coalesce(update_timestamp, create_timestamp) AS __pstage_source_change_timestamp,
-	CURRENT_LOCALTIMESTAMP() AS __pstage_synced_timestamp,
 	FALSE AS __pstage_deleted_indicator,
     md5(
     	IFNULL(CAST(create_timestamp AS VARCHAR(128)), '')
@@ -25,10 +29,20 @@ CTE_loan__land AS
     	|| '-' || IFNULL(TRIM(loan_officer), '')
     	|| '-' || IFNULL(CAST(update_timestamp AS VARCHAR(128)), '')
     ) AS __pstage_hash_diff,
-    ROW_NUMBER() OVER (PARTITION BY loan_number ORDER BY __pstage_source_change_timestamp DESC, __pstage_load_dts DESC) AS __pstage_load_order
-    FROM test_persisted_stage.main.loan__land
+    ROW_NUMBER() OVER (PARTITION BY loan_number ORDER BY __pstage_source_change_timestamp DESC, __pstage_inserted_timestamp DESC) AS __pstage_load_order
+    FROM CTE_REMOVE_PERFECT_DUPES
+),
+CTE_CALC_CONFIDENCE AS
+(
+	SELECT loan_number, __pstage_source_change_timestamp, __pstage_inserted_timestamp, (1/COUNT(*)) * 100 AS __pstage_dedupe_confidence_percent
+	FROM CTE_MAIN
+	GROUP BY loan_number, __pstage_inserted_timestamp, __pstage_source_change_timestamp
 )
-SELECT * FROM CTE_loan__land;
+SELECT main.*, ccon.__pstage_dedupe_confidence_percent FROM CTE_MAIN main
+LEFT JOIN CTE_CALC_CONFIDENCE ccon
+ON main.loan_number = ccon.loan_number
+AND main.__pstage_source_change_timestamp = ccon.__pstage_source_change_timestamp
+AND main.__pstage_inserted_timestamp = ccon.__pstage_inserted_timestamp;
 
 SELECT DISTINCT __pstage_load_order AS __pstage_load_order
 FROM temp__cte_loan__land
