@@ -102,7 +102,7 @@ class TestDuckDBLoad(unittest.TestCase):
         session = Session(self.test_db_path, logger)
         #run a persisted staging load
         setup.exec(session, "test_persisted_stage.main.loan__land", "test_persisted_stage.main.loan", "test_persisted_stage.main.loan__hist", "test_persisted_stage.main.loan__cks", ["loan_number"])
-        load.exec(session, "test_persisted_stage.main.loan__land", "test_persisted_stage.main.loan", "test_persisted_stage.main.loan__hist", ["update_timestamp", "create_timestamp"])
+        load.exec(session, "test_persisted_stage.main.loan__land", "test_persisted_stage.main.loan", "test_persisted_stage.main.loan__hist")
         
         #close the sessions connection.
         session.close()

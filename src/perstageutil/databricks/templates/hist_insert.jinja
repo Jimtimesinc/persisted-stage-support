@@ -28,7 +28,7 @@ CTE_CURRENT AS
         __pstage_inserted_timestamp AS __pstage_effective_timestamp
     FROM {{current_table_catalog}}.{{current_table_schema}}.{{current_table_name}}
     INNER JOIN CTE_MAX_LOADED
-    ON {{current_table_catalog}}.{{current_table_schema}}.{{current_table_name}}.__pstage_inserted_timestamp > CTE_MAX_LOADED.max__pstage_inserted_timestamp -- record if __pstage_inserted_timestamp is greater than previous max __pstage_inserted_timestamp from historical table
+    ON loan.__pstage_inserted_timestamp > CTE_MAX_LOADED.max__pstage_inserted_timestamp -- record if __pstage_inserted_timestamp is greater than previous max __pstage_inserted_timestamp from historical table
     UNION
     SELECT
 {% for record in current_to_hist_key_map_records %}
@@ -44,7 +44,7 @@ CTE_CURRENT AS
         __pstage_updated_timestamp AS __pstage_effective_timestamp
     FROM {{current_table_catalog}}.{{current_table_schema}}.{{current_table_name}}
     INNER JOIN CTE_MAX_LOADED
-    ON {{current_table_catalog}}.{{current_table_schema}}.{{current_table_name}}.__pstage_updated_timestamp > CTE_MAX_LOADED.max__pstage_inserted_timestamp -- record if __pstage_updated_timestamp is greater than previous max __pstage_inserted_timestamp from historical table
+    ON loan.__pstage_updated_timestamp > CTE_MAX_LOADED.max__pstage_inserted_timestamp -- record if __pstage_updated_timestamp is greater than previous max __pstage_inserted_timestamp from historical table
 )
 SELECT
 {% for record in current_to_hist_key_map_records %}

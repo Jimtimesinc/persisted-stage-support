@@ -21,24 +21,20 @@ JINJA_PACKAGE_NAME = "perstageutil.duckdb.load"
 
 #The main exec of this function.  This mimics Snowflake python procedures a bit on that you need a main handeler to call so that
 # this codd can then be used as a template to create procedures within cloud RDBMS environments.
-def exec(session : Session, landing_table_full_name : str, current_table_full_name : str, hist_table_full_name : str, source_change_timestamp_columns : list):
+def exec(session : Session, landing_table_full_name : str, current_table_full_name : str, hist_table_full_name : str, source_change_timestamp_columns : list = []):
     """
     Executes a persisted staging load within a persisted staging namespace.
     
     :param session: Contains the connection information holds the session state for a load.
     :type session: Session
-    :param landing_table_full_name: The landing table name that is the source for the persisted staging load data.  This table
-    contains the imported data and is used as the source to merge into the current table and insert and update the historical table.  The table needs to have the needed metadata columns and the 
-    load will error if they are not there.
+    :param landing_table_full_name: The landing table name that is the source for the persisted staging load data.  This table contains the imported data and is used as the source to merge into the current table and insert and update the historical table.  The table needs to have the needed metadata columns and the load will error if they are not there.
     :type landing_table_full_name: str
-    :param current_table_full_name: The current table which is a current valued volitile ODS style table.  The table needs to have the needed metadata columns and the 
+    :param current_table_full_name: The current table which is a current valued volatile ODS style table.  The table needs to have the needed metadata columns and the 
     load will error if they are not there.
     :type current_table_full_name: str
-    :param hist_table_full_name: The historical table to to be inserted into, which is a persisted table that tracks all changes.   The table needs to have the needed metadata columns and the 
-    load will error if they are not there.
+    :param hist_table_full_name: The historical table to to be inserted into, which is a persisted table that tracks all changes.   The table needs to have the needed metadata columns and the load will error if they are not there.
     :type hist_table_full_name: str
-    :param source_change_timestamp_columns: These are columns in the source that indicate a time sequence that should be respected in the the data warehouse load.  These columns will be used in addition 
-    to the __pstage_inserted_timestamp to organized the loads and they will be given a higher priority.
+    :param source_change_timestamp_columns: These are columns in the source that indicate a time sequence that should be respected in the the data warehouse load.  These columns will be used in addition to the __pstage_inserted_timestamp to organized the loads and they will be given a higher priority.
     :type source_change_timestamp_columns: list
     """
     session.logger.info(f"Starting load for namespace {current_table_full_name}.")
@@ -138,7 +134,7 @@ def _return_column_map_df(session : Session, source_table_object : DataObject, t
 def _return_key_columns_df(df : pandas.DataFrame) -> pandas.DataFrame:
     """This function is an implementation detail and should not be used externally."""
     #df["column_sql"] = numpy.where(df["source_data_type"] == "VARCHAR", f"TRIM({df["source_column_name"]})", df["source_column_name"])
-    return_df = df[(df['primary_key_indicator'] == True) & (~df['target_column_name'].str.startswith('__pstage_', na=False))]
+    return_df = df[(df["primary_key_indicator"] == True) & (~df["target_column_name"].str.startswith("__pstage_", na=False))]
     return return_df
 
 def _return_attribute_columns_only_df(df : pandas.DataFrame) -> pandas.DataFrame:
@@ -151,9 +147,8 @@ def _return_attribute_columns_only_df(df : pandas.DataFrame) -> pandas.DataFrame
     :return: Description
     :rtype: DataFrame
     """
-    #df["column_sql"] = numpy.where(df["source_data_type"] == "VARCHAR", f"TRIM({df["source_column_name"]})", df["source_column_name"])
-    #df["column_md5_sql"] = numpy.where(df["source_data_type"] == "VARCHAR", f"IFNULL(TRIM({df["source_column_name"]}, '')", f"IFNULL(CAST({df["source_column_name"]} AS VARCHAR(128)), '')")
-    return_df = df[(df['primary_key_indicator'] == False) & (~df['target_column_name'].str.startswith('__pstage_', na=False))]
+    #we have to sort this by name as this is used to build md5 hash diffs....
+    return_df = (df[(df["primary_key_indicator"] == False) & (~df["target_column_name"].str.startswith("__pstage_", na=False))]).sort_values(by=["target_column_name"])
     return return_df
 
 def _generate_create_source_cte_table_sql(landing_table_object : DataObject, land_to_current_key_map_df : pandas.DataFrame, 

@@ -7,7 +7,7 @@ CREATE or replace TABLE {{table_catalog}}.{{table_schema}}.{{table_name}}(
 {% endfor %}
 __pstage_effective_timestamp TIMESTAMP NOT NULL,
 __pstage_expiration_timestamp TIMESTAMP NULL,
-__pstage_current_version_indicator BOOLEAN NULL,
+__pstage_current_version_indicator BOOLEAN,
 __pstage_inserted_timestamp TIMESTAMP NOT NULL,
 __pstage_updated_timestamp TIMESTAMP NULL,
 __pstage_deleted_indicator BOOLEAN NOT NULL,

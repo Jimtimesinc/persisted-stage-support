@@ -1,0 +1,11 @@
+UPDATE {{table_catalog}}.{{table_schema}}.{{table_name}}
+SET __pstage_hash_diff = md5(
+{% for record in records %}
+    {% if loop.first %}
+        {{ record.column_md5_sql }}
+    {% else %}
+        || '-' || {{ record.column_md5_sql }}
+    {% endif %}
+{% endfor %}
+)
+;

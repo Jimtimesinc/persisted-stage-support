@@ -1,14 +1,14 @@
 
 CREATE or replace TABLE {{table_catalog}}.{{table_schema}}.{{table_name}}(
 {% for record in key_records %}
-{{ record.column_name }} {{record.data_type_sql}} not null,
+{{ record.column_name }} {{record.data_type_sql}} NOT NULL,
 {% endfor %}
 {% for record in attribute_records %}
-{{ record.column_name }} {{record.data_type_sql}} null,
+{{ record.column_name }} {{record.data_type_sql}} NULL,
 {% endfor %}
-__pstage_inserted_timestamp TIMESTAMP not null,
-__pstage_updated_timestamp TIMESTAMP null,
-__pstage_deleted_indicator boolean not null,
-__pstage_hash_diff varchar(32),
-__pstage_dedupe_confidence_percent float not null,
+__pstage_inserted_timestamp TIMESTAMP NOT NULL,
+__pstage_updated_timestamp TIMESTAMP NULL,
+__pstage_deleted_indicator boolean NOT NULL,
+__pstage_hash_diff varchar(32) NULL,
+__pstage_dedupe_confidence_percent float NOT NULL,
 PRIMARY KEY({% for record in key_records %}{% if loop.last %}{{ record.column_name }}{% else %}{{ record.column_name }},{% endif %}{% endfor %}));
